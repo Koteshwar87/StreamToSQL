@@ -1,6 +1,7 @@
 
 
 Start a Kafka broker:
+
 **docker run -d --name broker apache/kafka:latest**
 
 Open a shell in the broker container:
