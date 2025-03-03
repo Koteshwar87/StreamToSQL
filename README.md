@@ -1,8 +1,8 @@
 
 
-Start a Kafka broker:
+Start a Kafka broker in Docker:
 
-**docker run -d --name broker apache/kafka:latest**
+**docker run -d --name broker -p 9092:9092 apache/kafka:latest**
 
 Open a shell in the broker container:
 **docker exec --workdir /opt/kafka/bin/ -it broker sh**
@@ -25,3 +25,14 @@ The consumer will continue to run until you exit out of it by entering Ctrl+C.
 
 When you are finished, stop and remove the container by running the following command on your host machine:
 **docker rm -f broker**
+
+
+
+Start Postgres Database in Docker:
+
+**docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres**
+
+
+
+
+

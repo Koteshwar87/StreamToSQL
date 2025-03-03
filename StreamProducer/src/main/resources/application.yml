@@ -1,0 +1,33 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /producer
+
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres  # Change 'mydatabase' to your DB name
+    username: postgres  # Change to your PostgreSQL username
+    password: mysecretpassword  # Change to your PostgreSQL password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update  # Use 'update', 'validate', 'create', or 'none' based on your needs
+    show-sql: true  # Enable SQL logging
+
+  application:
+    name: kafka-producer
+  kafka:
+    bootstrap-servers: localhost:9092  # Kafka running in Docker
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all  # Ensures messages are fully committed
+      retries: 3  # Retries on transient failures
+
+
+logging:
+  level:
+    root: INFO
+    org.apache.kafka: WARN  # Reduce excessive Kafka logs
