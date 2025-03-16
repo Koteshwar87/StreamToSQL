@@ -1,0 +1,43 @@
+server:
+  port: 8082  # Assign a specific port for this module
+
+spring:
+  application:
+    name: order-items-consumer
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres  # Change 'mydatabase' to your DB name
+    username: postgres  # Change to your PostgreSQL username
+    password: mysecretpassword  # Change to your PostgreSQL password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update  # Use 'update', 'validate', 'create', or 'none' based on your needs
+    show-sql: true  # Enable SQL logging
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: order-items-consumer-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+#        group-id: "consumer-group-1"  # Valid characters only  # Ensures unique instance ID per consumer task
+    topic:
+      order-items: order-items-topic  # Define the topic name here
+
+  data:
+    redis:
+      host: localhost  # Redis running in Docker Desktop
+      port: 6379
+      timeout: 60s  # Standard timeout format
+      client-type: lettuce  # Using Lettuce instead of Jedis
+      lettuce:
+        pool:
+          max-active: 10  # Maximum active connections
+          max-idle: 5  # Maximum idle connections
+          min-idle: 1  # Minimum idle connections
+          max-wait: 2000ms  # Maximum time to wait for a connection

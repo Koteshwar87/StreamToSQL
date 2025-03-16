@@ -1,0 +1,11 @@
+{
+  "id": 123,
+  "dataType": "DATA",
+  "category": "ORDER_ITEMS",
+  "dataElements": {
+    "orderId": "ORD6789",
+    "productId": "PROD1001",
+    "quantity": 2,
+    "price": 49.99
+  }
+}

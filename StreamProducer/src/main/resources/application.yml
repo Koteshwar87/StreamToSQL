@@ -19,12 +19,13 @@ spring:
   application:
     name: kafka-producer
   kafka:
-    bootstrap-servers: localhost:9092  # Kafka running in Docker
+    bootstrap-servers: localhost:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all  # Ensures messages are fully committed
-      retries: 3  # Retries on transient failures
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    topic:
+      order-items: order-items-topic  # Define the topic name
+
 
 
 logging:

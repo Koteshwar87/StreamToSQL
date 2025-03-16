@@ -1,46 +1,51 @@
 package org.streamtosql.producer.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.streamtosql.producer.model.OrderEvent;
-
-import java.util.Random;
-import java.util.UUID;
+import org.streamtosql.producer.model.*;
 
 @Service
 public class KafkaProducerService {
 
-    private final KafkaTemplate<String, OrderEvent> kafkaTemplate;
-    private final Random random = new Random();
+    @Value("${spring.kafka.topic.order-items}")
+    private String orderItemsTopic;
 
-    public KafkaProducerService(KafkaTemplate<String, OrderEvent> kafkaTemplate) {
+    private final KafkaTemplate<String, BaseMessage> kafkaTemplate;
+
+    public KafkaProducerService(KafkaTemplate<String, BaseMessage> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    public void generateAndSendMessages(String topic) {
-        new Thread(() -> {
-            while (true) {
-                try {
-                    OrderEvent event = createRandomOrder();
-                    kafkaTemplate.send(topic, event.getOrderId(), event);
-                    System.out.println("Produced: " + event);
+    public void sendMessages() throws InterruptedException {
+        for (int i = 1; i <= 10; i++) {
+            // Create Header message
+            Header header = new Header();
+            header.setId((long) i);
+            header.setCategoryEnum(CategoryEnum.ORDER_ITEMS);
+            kafkaTemplate.send(orderItemsTopic, header);
+            System.out.println("Produced Header: " + header);
+            Thread.sleep(1000);
 
-                    Thread.sleep(2000); // Sleep 2 seconds between messages
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException("Producer thread interrupted", e);
-                }
-            }
-        }).start();
-    }
+            // Create OrderItems message
+            OrderItems orderItems = new OrderItems();
+            orderItems.setId((long) i);
+            orderItems.setOrderId("ORD" + i);
+            orderItems.setProductId("PROD" + i);
+            orderItems.setQuantity(i);
+            orderItems.setPrice(10.50 * i);
+            kafkaTemplate.send(orderItemsTopic, orderItems);
+            System.out.println("Produced OrderItems: " + orderItems);
+            Thread.sleep(1000);
 
-    private OrderEvent createRandomOrder() {
-        String orderId = UUID.randomUUID().toString();
-        String[] products = {"Laptop", "Phone", "Tablet", "Headphones", "Smartwatch"};
-        String product = products[random.nextInt(products.length)];
-        double price = 50 + (1000 * random.nextDouble());
-        int quantity = 1 + random.nextInt(5);
-
-        return new OrderEvent(orderId, product, price, quantity);
+            // Create Footer message
+            Footer footer = new Footer();
+            footer.setId((long) i);
+            footer.setCategoryEnum(CategoryEnum.ORDER_ITEMS);
+            footer.setCount(1);
+            kafkaTemplate.send(orderItemsTopic, footer);
+            System.out.println("Produced Footer: " + footer);
+            Thread.sleep(1000);
+        }
     }
 }

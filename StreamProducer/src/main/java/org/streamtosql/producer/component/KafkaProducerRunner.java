@@ -7,15 +7,17 @@ import org.streamtosql.producer.service.KafkaProducerService;
 @Component
 public class KafkaProducerRunner implements CommandLineRunner {
 
-    private final KafkaProducerService producerService;
+//    private final KafkaProducerService_Old producerService;
+    private final KafkaProducerService kafkaProducerService;
 
-    public KafkaProducerRunner(KafkaProducerService producerService) {
-        this.producerService = producerService;
+    public KafkaProducerRunner(KafkaProducerService kafkaProducerService) {
+        this.kafkaProducerService = kafkaProducerService;
     }
 
     @Override
-    public void run(String... args) {
-        String topic = "test-topic";
-        producerService.generateAndSendMessages(topic);
+    public void run(String... args) throws InterruptedException {
+//        String topic = "test-topic";
+//        producerService.generateAndSendMessages(topic);
+        kafkaProducerService.sendMessages();
     }
 }

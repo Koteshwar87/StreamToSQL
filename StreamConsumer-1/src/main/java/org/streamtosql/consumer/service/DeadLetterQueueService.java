@@ -1,4 +1,4 @@
-package org.streamtosql.consumer;
+package org.streamtosql.consumer.service;
 
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
