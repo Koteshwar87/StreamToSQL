@@ -45,32 +45,16 @@ public class KafkaConsumerService {
             containerFactory = "orderItemsKafkaListenerContainerFactory"
     )
     public void consume(BaseMessage message) {
-        try {
-            System.out.println("🔹 Received Message from Kafka: " + message);  // ✅ Log raw message
+        log.info("🔹 Received message: {}", message);
 
-            JsonNode jsonNode = objectMapper.readTree(String.valueOf(message));
-            String dataType = jsonNode.get("dataType").asText();  // ✅ Read "dataType" field
-
-            // ✅ Process message based on dataType
-            switch (dataType) {
-                case "HEADER":
-                    Header header = objectMapper.treeToValue(jsonNode, Header.class);
-                    processHeader(header);
-                    break;
-                case "DATA":
-                    OrderItems data = objectMapper.treeToValue(jsonNode, OrderItems.class);
-                    processData(data);
-                    break;
-                case "FOOTER":
-                    Footer footer = objectMapper.treeToValue(jsonNode, Footer.class);
-                    processFooter(footer);
-                    break;
-                default:
-                    System.err.println("⚠️ Unknown dataType received: " + dataType);
-            }
-        } catch (Exception e) {
-            System.err.println("❌ Failed to process message: " + e.getMessage());
-            e.printStackTrace();
+        if (message instanceof Header header) {
+            processHeader(header);
+        } else if (message instanceof OrderItems orderItems) {
+            processData(orderItems);
+        } else if (message instanceof Footer footer) {
+            processFooter(footer);
+        } else {
+            log.warn("⚠️ Unknown message type: {}", message.getClass().getSimpleName());
         }
     }
 

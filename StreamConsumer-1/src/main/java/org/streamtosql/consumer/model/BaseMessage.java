@@ -10,7 +10,7 @@ import lombok.Data;
         @JsonSubTypes.Type(value = Header.class, name = "HEADER"),
         @JsonSubTypes.Type(value = OrderItems.class, name = "DATA"),
         @JsonSubTypes.Type(value = Footer.class, name = "FOOTER")
-}) // This tells Jackson to look for a property named dataType to decide which concrete subclass to instantiate.
+}) // This tells Jackson to look for a property named dataTypeEnum to decide which concrete subclass to instantiate.
 @Data
 public abstract class BaseMessage {
     private Long id;
