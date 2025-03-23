@@ -5,6 +5,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.streamtosql.producer.model.*;
 
+import java.util.Random;
+import java.util.UUID;
+
 @Service
 public class KafkaProducerService {
 
@@ -12,6 +15,7 @@ public class KafkaProducerService {
     private String orderItemsTopic;
 
     private final KafkaTemplate<String, BaseMessage> kafkaTemplate;
+    private final Random random = new Random();
 
     public KafkaProducerService(KafkaTemplate<String, BaseMessage> kafkaTemplate) {
         this.kafkaTemplate = kafkaTemplate;
@@ -19,36 +23,45 @@ public class KafkaProducerService {
 
     public void sendMessages() throws InterruptedException {
         for (int i = 1; i <= 10; i++) {
-            // Create Header message
+            String correlationId = UUID.randomUUID().toString();  // 🔄 Unique ID per message group
+
+            // Header
             Header header = new Header();
             header.setId((long) i);
             header.setDataTypeEnum(DataTypeEnum.HEADER);
             header.setCategoryEnum(CategoryEnum.ORDER_ITEMS);
-            kafkaTemplate.send(orderItemsTopic, header);
+            header.setCorrelationId(correlationId);
+            kafkaTemplate.send(orderItemsTopic, correlationId, header); // ✅ use correlationId as Kafka key
             System.out.println("Produced Header: " + header);
-            Thread.sleep(1000);
+            Thread.sleep(500);
 
-            // Create OrderItems message
-            OrderItems orderItems = new OrderItems();
-            orderItems.setId((long) i);
-            orderItems.setDataTypeEnum(DataTypeEnum.DATA);
-            orderItems.setOrderId("ORD" + i);
-            orderItems.setProductId("PROD" + i);
-            orderItems.setQuantity(i);
-            orderItems.setPrice(10.50 * i);
-            kafkaTemplate.send(orderItemsTopic, orderItems);
-            System.out.println("Produced OrderItems: " + orderItems);
-            Thread.sleep(1000);
+            // OrderItems (random 1–100)
+            int itemCount = new Random().nextInt(100) + 1;
+            for (int j = 1; j <= itemCount; j++) {
+                OrderItems orderItems = new OrderItems();
+                orderItems.setId((long) j);
+                orderItems.setDataTypeEnum(DataTypeEnum.DATA);
+                orderItems.setOrderId("ORD" + i + "-" + j);
+                orderItems.setProductId("PROD" + j);
+                orderItems.setQuantity(j);
+                orderItems.setPrice(10.50 * j);
+                orderItems.setCorrelationId(correlationId);
+                kafkaTemplate.send(orderItemsTopic, correlationId, orderItems); // ✅ same key
+                System.out.println("Produced OrderItem: " + orderItems);
+                Thread.sleep(100);
+            }
 
-            // Create Footer message
+            // Footer
             Footer footer = new Footer();
             footer.setId((long) i);
             footer.setDataTypeEnum(DataTypeEnum.FOOTER);
             footer.setCategoryEnum(CategoryEnum.ORDER_ITEMS);
-            footer.setCount(1);
-            kafkaTemplate.send(orderItemsTopic, footer);
+            footer.setCount(itemCount);
+            footer.setCorrelationId(correlationId);
+            kafkaTemplate.send(orderItemsTopic, correlationId, footer); // ✅ same key
             System.out.println("Produced Footer: " + footer);
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
     }
+
 }

@@ -20,23 +20,11 @@ public class KafkaConsumerService {
 
 //    @Value("${spring.kafka.topic.order-items}")  // Load topic name from application.yml
 //    private String orderItemsTopic;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
 
     @PostConstruct
     public void init() {
         System.out.println("✅ KafkaConsumerService initialized!");
     }
-
-    /*@Autowired
-    private KafkaListenerEndpointRegistry registry;
-
-    @PostConstruct
-    public void checkListeners() {
-        log.info("🟢 Registered Listeners: {}", registry.getListenerContainers().size());
-        registry.getListenerContainers().forEach(container ->
-                log.info("🟢 Listener ID: {}, State: {}", container.getListenerId(), container.isRunning() ? "RUNNING" : "NOT RUNNING"));
-    }*/
 
 //    @KafkaListener(topics = "#{__listener.orderItemsTopic}", groupId = "order-items-consumer-group",
     @KafkaListener(

@@ -17,4 +17,6 @@ public abstract class BaseMessage {
 //    @JsonProperty("dataType")
     private DataTypeEnum dataTypeEnum;
     private CategoryEnum categoryEnum;
+
+    private String correlationId; // 🔄 Used to logically group messages
 }
