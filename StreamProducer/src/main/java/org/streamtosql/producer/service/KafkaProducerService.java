@@ -22,6 +22,7 @@ public class KafkaProducerService {
             // Create Header message
             Header header = new Header();
             header.setId((long) i);
+            header.setDataTypeEnum(DataTypeEnum.HEADER);
             header.setCategoryEnum(CategoryEnum.ORDER_ITEMS);
             kafkaTemplate.send(orderItemsTopic, header);
             System.out.println("Produced Header: " + header);
@@ -30,6 +31,7 @@ public class KafkaProducerService {
             // Create OrderItems message
             OrderItems orderItems = new OrderItems();
             orderItems.setId((long) i);
+            orderItems.setDataTypeEnum(DataTypeEnum.DATA);
             orderItems.setOrderId("ORD" + i);
             orderItems.setProductId("PROD" + i);
             orderItems.setQuantity(i);
@@ -41,6 +43,7 @@ public class KafkaProducerService {
             // Create Footer message
             Footer footer = new Footer();
             footer.setId((long) i);
+            footer.setDataTypeEnum(DataTypeEnum.FOOTER);
             footer.setCategoryEnum(CategoryEnum.ORDER_ITEMS);
             footer.setCount(1);
             kafkaTemplate.send(orderItemsTopic, footer);
