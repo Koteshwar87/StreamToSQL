@@ -5,8 +5,8 @@ spring:
   application:
     name: order-items-consumer
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres  # Change 'mydatabase' to your DB name
-    username: postgres  # Change to your PostgreSQL username
+    url: jdbc:postgresql://localhost:5432/postgresdb  # Change 'mydatabase' to your DB name
+    username: admin  # Change to your PostgreSQL username
     password: mysecretpassword  # Change to your PostgreSQL password
     driver-class-name: org.postgresql.Driver
   jpa:
@@ -14,20 +14,14 @@ spring:
     hibernate:
       ddl-auto: update  # Use 'update', 'validate', 'create', or 'none' based on your needs
     show-sql: true  # Enable SQL logging
-
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
       group-id: order-items-consumer-group
       auto-offset-reset: earliest
       enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-#        group-id: "consumer-group-1"  # Valid characters only  # Ensures unique instance ID per consumer task
-    topic:
-      order-items: order-items-topic  # Define the topic name here
+    listener:
+      auto-startup: true  # ✅ Ensures Kafka listener is started on app launch
 
   data:
     redis:
@@ -41,3 +35,14 @@ spring:
           max-idle: 5  # Maximum idle connections
           min-idle: 1  # Minimum idle connections
           max-wait: 2000ms  # Maximum time to wait for a connection
+#  autoconfigure:
+#    exclude: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+
+
+
+#logging:
+#  level:
+#    org.springframework: DEBUG
+#    org.apache.kafka: DEBUG
+#    org.springframework.kafka: DEBUG
+#    org.springframework.kafka.listener: DEBUG

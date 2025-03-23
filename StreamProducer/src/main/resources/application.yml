@@ -6,8 +6,8 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/postgres  # Change 'mydatabase' to your DB name
-    username: postgres  # Change to your PostgreSQL username
+    url: jdbc:postgresql://localhost:5432/postgresdb  # Change 'mydatabase' to your DB name
+    username: admin  # Change to your PostgreSQL username
     password: mysecretpassword  # Change to your PostgreSQL password
     driver-class-name: org.postgresql.Driver
   jpa:

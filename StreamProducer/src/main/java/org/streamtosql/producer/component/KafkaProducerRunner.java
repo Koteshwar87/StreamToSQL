@@ -1,5 +1,6 @@
 package org.streamtosql.producer.component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.streamtosql.producer.service.KafkaProducerService;
@@ -15,7 +16,7 @@ public class KafkaProducerRunner implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws InterruptedException {
+    public void run(String... args) throws InterruptedException, JsonProcessingException {
 //        String topic = "test-topic";
 //        producerService.generateAndSendMessages(topic);
         kafkaProducerService.sendMessages();
