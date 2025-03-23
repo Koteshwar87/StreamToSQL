@@ -1,4 +1,12 @@
 
+Start and Stop Docker containers:
+
+docker-compose down -v
+
+docker-compose up -d
+
+
+
 
 Start a Kafka broker in Docker:
 
