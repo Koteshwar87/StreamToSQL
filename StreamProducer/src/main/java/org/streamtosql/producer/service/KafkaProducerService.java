@@ -30,7 +30,7 @@ public class KafkaProducerService {
             header.setId((long) i);
             header.setDataTypeEnum(DataTypeEnum.HEADER);
             header.setCategoryEnum(CategoryEnum.ORDER_ITEMS);
-            header.setCorrelationId("force-fail");
+            header.setCorrelationId(correlationId);
             kafkaTemplate.send(orderItemsTopic, correlationId, header); // ✅ use correlationId as Kafka key
             System.out.println("Produced Header: " + header);
             Thread.sleep(1000);
