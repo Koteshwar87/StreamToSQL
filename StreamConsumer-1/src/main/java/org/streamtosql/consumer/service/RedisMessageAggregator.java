@@ -2,52 +2,61 @@ package org.streamtosql.consumer.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.data.redis.core.RedisTemplate;
+import lombok.RequiredArgsConstructor;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
-import org.streamtosql.consumer.model.BaseMessage;
-import org.streamtosql.consumer.model.Footer;
-import org.streamtosql.consumer.model.Header;
-import org.streamtosql.consumer.model.OrderItems;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.streamtosql.consumer.dto.BaseMessage;
+import org.streamtosql.consumer.dto.Footer;
+import org.streamtosql.consumer.dto.Header;
+import org.streamtosql.consumer.dto.OrderItems;
+import org.streamtosql.consumer.model.RedisFailureLog;
+import org.streamtosql.consumer.repository.RedisFailureLogRepository;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class RedisMessageAggregator {
 
     private final RedisTemplate<String, String> redisTemplate;
+    private final RetryTemplate redisRetryTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    public RedisMessageAggregator(RedisTemplate<String, String> redisTemplate) {
-        this.redisTemplate = redisTemplate;
-    }
+    private final RedisFailureLogRepository redisFailureLogRepository;
 
     public void storeMessage(BaseMessage message) {
         String correlationId = message.getCorrelationId();
-        String key = "group:" + correlationId;
 
         try {
             String json = objectMapper.writeValueAsString(message);
 
+            // ✅ Write Header or Footer as hash entry
             if (message instanceof Header) {
-                redisTemplate.opsForHash().put(key, "header", json);
+                retryPutHash("group:" + correlationId, "header", json);
             } else if (message instanceof Footer) {
-                redisTemplate.opsForHash().put(key, "footer", json);
-            } else if (message instanceof OrderItems) {
-                String listKey = "orderItems:" + correlationId;
-                redisTemplate.opsForList().rightPush(listKey, json);
+                retryPutHash("group:" + correlationId, "footer", json);
+            }
+            // ✅ Write OrderItems as list entry
+            else if (message instanceof OrderItems) {
+                retryPushList("orderItems:" + correlationId, json);
             }
 
             checkAndProcessIfComplete(correlationId);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize message", e);
+
+        } catch (Exception e) {
+            logRedisFailure(message, e);
+            throw new RuntimeException("❌ Redis write failed after retries for correlationId=" + correlationId, e);
         }
     }
 
     private void checkAndProcessIfComplete(String correlationId) throws JsonProcessingException {
-        String key = "group:" + correlationId;
-        String headerJson = (String) redisTemplate.opsForHash().get(key, "header");
-        String footerJson = (String) redisTemplate.opsForHash().get(key, "footer");
-        List<String> items = redisTemplate.opsForList().range("orderItems:" + correlationId, 0, -1);
+        String groupKey = "group:" + correlationId;
+        String listKey = "orderItems:" + correlationId;
+
+        // ✅ Read all parts with retries
+        String headerJson = retryGetHash(groupKey, "header");
+        String footerJson = retryGetHash(groupKey, "footer");
+        List<String> items = retryGetListRange(listKey, 0, -1);
 
         if (headerJson != null && footerJson != null && items != null) {
             Footer footer = objectMapper.readValue(footerJson, Footer.class);
@@ -64,12 +73,41 @@ public class RedisMessageAggregator {
 
                 processGroup(header, orderItemsList, footer);
 
-                // Clean up Redis
-                redisTemplate.delete(key);
-                redisTemplate.delete("orderItems:" + correlationId);
+                // Clean up Redis after success
+                retryDeleteKey(groupKey);
+                retryDeleteKey(listKey);
             }
         }
     }
+
+    // ✅ New method: log failure into DB
+    private void logRedisFailure(BaseMessage message, Exception exception) {
+        try {
+            String correlationId = message.getCorrelationId();
+            String payload = objectMapper.writeValueAsString(message);
+
+            String redisKey = (message instanceof OrderItems)
+                    ? "orderItems:" + correlationId
+                    : "group:" + correlationId;
+
+            RedisFailureLog failureLog = new RedisFailureLog();
+            failureLog.setCorrelationId(correlationId);
+            failureLog.setMessageKey(null); // Can be added if Kafka key is available
+            failureLog.setMessageType(message.getDataTypeEnum().name());
+            failureLog.setPayload(payload);
+            failureLog.setRedisKey(redisKey);
+            failureLog.setErrorMessage(exception.getMessage());
+            failureLog.setStatus("PENDING");
+            failureLog.setRetryCount(0);
+            failureLog.setCreatedAt(java.time.LocalDateTime.now());
+
+            redisFailureLogRepository.save(failureLog);
+
+        } catch (Exception ex) {
+            throw new RuntimeException("❌ Failed to log Redis failure to database", ex);
+        }
+    }
+
 
     private void processGroup(Header header, List<OrderItems> items, Footer footer) {
         System.out.println("✅ Completed Message Group [correlationId: " + header.getCorrelationId() + "]");
@@ -102,4 +140,59 @@ public class RedisMessageAggregator {
         System.out.println("--------------------------------------------------\n");
     }
 
+
+    /* To reduce duplication, large teams abstract it like this:
+    @Component
+    public class RedisRetryExecutor {
+
+        private final RetryTemplate retryTemplate;
+
+        public RedisRetryExecutor(RetryTemplate retryTemplate) {
+            this.retryTemplate = retryTemplate;
+        }
+
+        public void executeVoid(Runnable redisAction) {
+            retryTemplate.execute(context -> {
+                redisAction.run();
+                return null;
+            });
+        }
+
+        public <T> T execute(Supplier<T> redisSupplier) {
+            return retryTemplate.execute(context -> redisSupplier.get());
+        }
+    }*/
+
+    // Reusable Redis Retry Wrappers (SRP + DRY)
+    private void retryPutHash(String redisKey, String field, String value) {
+        redisRetryTemplate.execute(context -> {
+            redisTemplate.opsForHash().put(redisKey, field, value);
+            return null;
+        }
+        );
+    }
+
+    private String retryGetHash(String redisKey, String field) {
+        return redisRetryTemplate.execute(context ->
+                (String) redisTemplate.opsForHash().get(redisKey, field)
+        );
+    }
+
+    private void retryPushList(String listKey, String value) {
+        redisRetryTemplate.execute(context ->
+                redisTemplate.opsForList().rightPush(listKey, value)
+        );
+    }
+
+    private List<String> retryGetListRange(String listKey, long start, long end) {
+        return redisRetryTemplate.execute(context ->
+                redisTemplate.opsForList().range(listKey, start, end)
+        );
+    }
+
+    private void retryDeleteKey(String redisKey) {
+        redisRetryTemplate.execute(context ->
+                redisTemplate.delete(redisKey)
+        );
+    }
 }

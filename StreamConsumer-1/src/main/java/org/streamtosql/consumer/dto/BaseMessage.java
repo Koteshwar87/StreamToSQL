@@ -1,4 +1,4 @@
-package org.streamtosql.consumer.model;
+package org.streamtosql.consumer.dto;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
