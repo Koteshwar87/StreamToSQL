@@ -22,7 +22,7 @@ public class KafkaProducerService {
     }
 
     public void sendMessages() throws InterruptedException {
-        for (int i = 1; i <= 20; i++) {
+        for (int i = 1; i <= 5; i++) {
             String correlationId = UUID.randomUUID().toString();  // 🔄 Unique ID per message group
 
             // Header
@@ -33,7 +33,7 @@ public class KafkaProducerService {
             header.setCorrelationId(correlationId);
             kafkaTemplate.send(orderItemsTopic, correlationId, header); // ✅ use correlationId as Kafka key
             System.out.println("Produced Header: " + header);
-            Thread.sleep(1000);
+            Thread.sleep(500);
 
             // OrderItems (random 1–100)
             int itemCount = new Random().nextInt(100) + 1;
@@ -48,7 +48,7 @@ public class KafkaProducerService {
                 orderItems.setCorrelationId(correlationId);
                 kafkaTemplate.send(orderItemsTopic, correlationId, orderItems); // ✅ same key
                 System.out.println("Produced OrderItem: " + orderItems);
-                Thread.sleep(800);
+                Thread.sleep(200);
             }
 
             // Footer
@@ -60,7 +60,7 @@ public class KafkaProducerService {
             footer.setCorrelationId(correlationId);
             kafkaTemplate.send(orderItemsTopic, correlationId, footer); // ✅ same key
             System.out.println("Produced Footer: " + footer);
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
     }
 
