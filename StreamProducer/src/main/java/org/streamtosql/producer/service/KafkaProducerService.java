@@ -33,7 +33,7 @@ public class KafkaProducerService {
             header.setCorrelationId(correlationId);
             kafkaTemplate.send(orderItemsTopic, correlationId, header); // ✅ use correlationId as Kafka key
             System.out.println("Produced Header: " + header);
-            Thread.sleep(500);
+            Thread.sleep(50);
 
             // OrderItems (random 1–100)
             int itemCount = new Random().nextInt(100) + 1;
@@ -48,7 +48,7 @@ public class KafkaProducerService {
                 orderItems.setCorrelationId(correlationId);
                 kafkaTemplate.send(orderItemsTopic, correlationId, orderItems); // ✅ same key
                 System.out.println("Produced OrderItem: " + orderItems);
-                Thread.sleep(200);
+                Thread.sleep(100);
             }
 
             // Footer
@@ -59,8 +59,8 @@ public class KafkaProducerService {
             footer.setCount(itemCount);
             footer.setCorrelationId(correlationId);
             kafkaTemplate.send(orderItemsTopic, correlationId, footer); // ✅ same key
-            System.out.println("Produced Footer: " + footer);
-            Thread.sleep(500);
+            System.out.println("Produced Footer: " + footer + "correlation_id: " + correlationId);
+            Thread.sleep(50);
         }
     }
 

@@ -3,26 +3,35 @@ package org.streamtosql.consumer.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import org.streamtosql.consumer.dto.BaseMessage;
 import org.streamtosql.consumer.dto.Footer;
 import org.streamtosql.consumer.dto.Header;
 import org.streamtosql.consumer.dto.OrderItems;
+import org.streamtosql.consumer.model.OrderItemEntity;
+import org.streamtosql.consumer.model.OrderItemId;
 import org.streamtosql.consumer.model.RedisFailureLog;
+import org.streamtosql.consumer.repository.OrderItemRepository;
 import org.streamtosql.consumer.repository.RedisFailureLogRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class RedisMessageAggregator {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final RetryTemplate redisRetryTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final RedisFailureLogRepository redisFailureLogRepository;
+    private final OrderItemRepository orderItemRepository;
 
     public void storeMessage(BaseMessage message) {
         String correlationId = message.getCorrelationId();
@@ -108,9 +117,27 @@ public class RedisMessageAggregator {
         }
     }
 
-
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     private void processGroup(Header header, List<OrderItems> items, Footer footer) {
-        System.out.println("✅ Completed Message Group [correlationId: " + header.getCorrelationId() + "]");
+        log.info("✅ Aggregated group complete. Persisting OrderItems for correlationId={}", header.getCorrelationId());
+
+        // ✅ Map DTOs to Entities
+        List<OrderItemEntity> entities = items.stream()
+                .map(item -> OrderItemEntity.builder()
+                        .id(new OrderItemId(header.getCorrelationId(), item.getOrderId()))
+                        .productId(item.getProductId())
+                        .quantity(item.getQuantity())
+                        .price(item.getPrice())
+                        .createdAt(LocalDateTime.now())
+                        .build())
+                .toList();
+
+        // ✅ Batch insert
+        orderItemRepository.saveAll(entities);
+
+        log.info("✅ Successfully inserted {} OrderItems to DB for correlationId={}",
+                entities.size(), header.getCorrelationId());
+        /*System.out.println("✅ Completed Message Group [correlationId: " + header.getCorrelationId() + "]");
         System.out.println("--------------------------------------------------");
 
         // 🔹 Print Header
@@ -137,11 +164,11 @@ public class RedisMessageAggregator {
         System.out.println("  Category     : " + footer.getCategoryEnum());
         System.out.println("  Total Count  : " + footer.getCount());
 
-        System.out.println("--------------------------------------------------\n");
+        System.out.println("--------------------------------------------------\n");*/
     }
 
 
-    /* To reduce duplication, large teams abstract it like this:
+    /* To reduce duplication
     @Component
     public class RedisRetryExecutor {
 

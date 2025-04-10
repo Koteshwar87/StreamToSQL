@@ -10,6 +10,11 @@ spring:
     password: mysecretpassword  # Change to your PostgreSQL password
     driver-class-name: org.postgresql.Driver
   jpa:
+    properties:
+      hibernate.jdbc.batch_size: 10             # ✅ Enables batch insert of 10 records
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
+      hibernate.batch_versioned_data: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: update  # Use 'update', 'validate', 'create', or 'none' based on your needs
@@ -40,8 +45,11 @@ spring:
 
 
 
-#logging:
-#  level:
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.hibernate.engine.jdbc.batch.internal.BatchingBatch: DEBUG
 #    org.springframework: DEBUG
 #    org.apache.kafka: DEBUG
 #    org.springframework.kafka: DEBUG

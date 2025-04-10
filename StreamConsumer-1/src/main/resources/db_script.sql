@@ -11,3 +11,14 @@ CREATE TABLE redis_failure_log (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,             -- Original failure timestamp
     last_retry_at TIMESTAMP NULL                                -- Last retry attempt timestamp
 );
+
+CREATE TABLE order_items (
+    correlation_id VARCHAR(100) NOT NULL,
+    order_id VARCHAR(100) NOT NULL,
+    product_id VARCHAR(100) NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (correlation_id, order_id)
+);
+

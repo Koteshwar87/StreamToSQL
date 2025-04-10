@@ -30,6 +30,7 @@ public class KafkaConsumerService {
         } catch (Exception e) {
             log.error("❌ Failed to process message: {}", message, e);
             // Don't acknowledge = message will be retried
+            // This will only happen if both Redis write and fallback-to-DB fail
         }
     }
 }
